@@ -27,7 +27,7 @@ GPT_3_16K_MODELS = ("gpt-3.5-turbo-16k", "gpt-3.5-turbo-16k-0613", "gpt-3.5-turb
 GPT_4_MODELS = ("gpt-4", "gpt-4-0314", "gpt-4-0613")
 GPT_4_32K_MODELS = ("gpt-4-32k", "gpt-4-32k-0314", "gpt-4-32k-0613")
 GPT_4_VISION_MODELS = ("gpt-4-vision-preview",)
-GPT_4_128K_MODELS = ("gpt-4-1106-preview","gpt-4-0125-preview","gpt-4-turbo-preview")
+GPT_4_128K_MODELS = ("gpt-4-1106-preview","gpt-4-0125-preview","gpt-4-turbo-preview", "gpt-4-turbo")
 GPT_ALL_MODELS = GPT_3_MODELS + GPT_3_16K_MODELS + GPT_4_MODELS + GPT_4_32K_MODELS + GPT_4_VISION_MODELS + GPT_4_128K_MODELS
 
 
@@ -62,7 +62,7 @@ def are_functions_available(model: str) -> bool:
     if model in ("gpt-3.5-turbo-0301", "gpt-4-0314", "gpt-4-32k-0314"):
         return False
     # Stable models will be updated to support functions on June 27, 2023
-    if model in ("gpt-3.5-turbo", "gpt-3.5-turbo-1106", "gpt-4", "gpt-4-32k","gpt-4-1106-preview","gpt-4-0125-preview","gpt-4-turbo-preview"):
+    if model in ("gpt-3.5-turbo", "gpt-3.5-turbo-1106", "gpt-4", "gpt-4-turbo", "gpt-4-32k","gpt-4-1106-preview","gpt-4-0125-preview","gpt-4-turbo-preview"):
         return datetime.date.today() > datetime.date(2023, 6, 27)
     # Models gpt-3.5-turbo-0613 and  gpt-3.5-turbo-16k-0613 will be deprecated on June 13, 2024
     if model in ("gpt-3.5-turbo-0613", "gpt-3.5-turbo-16k-0613"):
@@ -118,9 +118,14 @@ class OpenAIHelper:
 
     def get_conversation_stats(self, chat_id: int) -> tuple[int, int]:
         """
-        Gets the number of messages and tokens used in the conversation.
-        :param chat_id: The chat ID
-        :return: A tuple containing the number of messages and tokens used
+        Returns the statistics of a conversation in terms of number of messages and number of tokens.
+
+        Parameters:
+        - chat_id (int): The ID of the conversation.
+
+        Returns:
+        - tuple[int, int]: A tuple containing the number of messages and number of tokens in the conversation.
+
         """
         if chat_id not in self.conversations:
             self.reset_chat_history(chat_id)
@@ -128,10 +133,20 @@ class OpenAIHelper:
 
     async def get_chat_response(self, chat_id: int, query: str) -> tuple[str, str]:
         """
-        Gets a full response from the GPT model.
-        :param chat_id: The chat ID
-        :param query: The query to send to the model
-        :return: The answer from the model and the number of tokens used
+        Method: get_chat_response
+
+        Description:
+        This method is used to get a response from the chat given a chat ID and a query.
+
+        Parameters:
+        - chat_id: An integer representing the ID of the chat.
+        - query: A string representing the query made by the user.
+
+        Returns:
+        A tuple containing:
+        - answer: A string representing the response from the chat.
+        - total_tokens: A string representing the total number of tokens used in the response.
+
         """
         plugins_used = ()
         response = await self.__common_get_chat_response(chat_id, query)
@@ -171,10 +186,24 @@ class OpenAIHelper:
 
     async def get_chat_response_stream(self, chat_id: int, query: str):
         """
-        Stream response from the GPT model.
-        :param chat_id: The chat ID
-        :param query: The query to send to the model
-        :return: The answer from the model and the number of tokens used, or 'not_finished'
+        Method: get_chat_response_stream
+
+        Description:
+        Returns a stream of chat responses for the given chat ID and query.
+        This method is used to interact with the chatbot and receive responses in real-time.
+
+        Parameters:
+        - chat_id (int): The ID of the chat.
+        - query (str): The query sent by the user.
+
+        Returns:
+        - Generator[Tuple[str, str]]: A generator that yields tuples containing the chat response
+          and the number of tokens used. Each tuple represents a chat response.
+
+        Example usage:
+        async for response, tokens_used in bot.get_chat_response_stream(chat_id, query):
+            print(response)
+            print(f"Tokens used: {tokens_used}")
         """
         plugins_used = ()
         response = await self.__common_get_chat_response(chat_id, query, stream=True)
@@ -215,10 +244,33 @@ class OpenAIHelper:
     )
     async def __common_get_chat_response(self, chat_id: int, query: str, stream=False):
         """
-        Request a response from the GPT model.
-        :param chat_id: The chat ID
-        :param query: The query to send to the model
-        :return: The answer from the model and the number of tokens used
+        Retrieves a chat response using the OpenAI Chat API.
+
+        Parameters:
+        - chat_id (int): The ID of the chat conversation.
+        - query (str): The user's message/query.
+        - stream (bool): Whether to stream the response or not. Default is False.
+
+        Returns:
+        - Response: The chat response from the OpenAI Chat API.
+
+        Raises:
+        - openai.RateLimitError: If the API rate limit is reached.
+        - openai.BadRequestError: If there is an error with the API request.
+        - Exception: If there is any other unexpected error.
+
+        Note:
+        - This method uses a retry mechanism with exponential backoff to handle rate limit errors.
+        - The chat history is maintained in the `conversations` dictionary. If the chat ID is not present or the chat history
+          has exceeded the maximum age, the chat history is reset.
+        - The user's message/query is added to the chat history.
+        - If the chat history is too long (exceeded maximum tokens or maximum history size),
+          it is summarized to conserve token usage.
+          The summary is added to the chat history and the original user's message/query is retained.
+        - The common arguments for the OpenAI Chat API request are determined based on the configuration settings.
+        - If function plugins are enabled and there are available function specifications,
+          the common arguments include the function specs and the function call option is set to 'auto'.
+
         """
         bot_language = self.config['bot_language']
         try:
@@ -602,6 +654,28 @@ class OpenAIHelper:
         :param content: The message content
         """
         self.conversations[chat_id].append({"role": role, "content": content})
+
+    def get_last_response(self, chat_id, role):
+        """
+        Get the last response from a conversation.
+
+        Parameters:
+        self (object): The current object instance.
+        chat_id (int): The ID of the conversation.
+        role (str): The role of the participant in the conversation.
+
+        Returns:
+        str or None: The content of the last response if the conversation exists and the
+        role matches the last message. None if the conversation doesn't exist or the role doesn't match.
+
+        """
+        if chat_id not in self.conversations:
+            return None
+        last_message = self.conversations[chat_id][-1]
+        if last_message["role"] == role:
+            return last_message["content"]
+        else:
+            return None
 
     async def __summarise(self, conversation) -> str:
         """

@@ -289,12 +289,17 @@ class ChatGPTTelegramBot:
         """
         Generates an speech for the given input using TTS APIs
         """
+        logging.info("TTS creations")
         if not self.config['enable_tts_generation'] \
                 or not await self.check_allowed_and_within_budget(update, context):
             return
 
         tts_query = message_text(update.message)
-        if tts_query == '':
+        if tts_query == "":
+            tts_query = self.openai.get_last_response(chat_id=update.effective_chat.id, role="assistant")
+            logging.info(f'New TTS request for existing assistant message: {tts_query}')
+
+        if tts_query is None or tts_query == '':
             await update.effective_message.reply_text(
                 message_thread_id=get_thread_id(update),
                 text=localized_text('tts_no_prompt', self.config['bot_language'])

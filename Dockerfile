@@ -5,10 +5,8 @@ ENV PYTHONFAULTHANDLER=1 \
      PYTHONDONTWRITEBYTECODE=1 \
      PIP_DISABLE_PIP_VERSION_CHECK=on
 
-RUN apk --no-cache add ffmpeg
+RUN apk add ffmpeg
 
 WORKDIR /app
 COPY . .
-RUN pip install -r requirements.txt --no-cache-dir
-
-CMD ["python", "bot/main.py"]
+RUN pip install -r requirements.txt
