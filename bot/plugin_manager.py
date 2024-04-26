@@ -15,6 +15,7 @@ from plugins.deepl import DeeplTranslatePlugin
 from plugins.worldtimeapi import WorldTimeApiPlugin
 from plugins.whois_ import WhoisPlugin
 from plugins.webshot import WebshotPlugin
+from plugins.google_places import GooglePlacesTextSearchPlugin
 
 
 class PluginManager:
@@ -25,6 +26,7 @@ class PluginManager:
     def __init__(self, config):
         enabled_plugins = config.get('plugins', [])
         plugin_mapping = {
+            'google_places': GooglePlacesTextSearchPlugin,
             'wolfram': WolframAlphaPlugin,
             'weather': WeatherPlugin,
             'crypto': CryptoPlugin,
