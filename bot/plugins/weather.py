@@ -1,3 +1,4 @@
+import logging
 from datetime import datetime
 from typing import Dict
 
@@ -64,7 +65,9 @@ class WeatherPlugin(Plugin):
               f'&temperature_unit={kwargs["unit"]}'
         if function_name == 'get_current_weather':
             url += '&current_weather=true'
-            return requests.get(url).json()
+            result = requests.get(url).json()
+            logging.debug(function_name, result)
+            return result
 
         elif function_name == 'get_forecast_weather':
             url += '&daily=weathercode,temperature_2m_max,temperature_2m_min,precipitation_probability_mean,'
@@ -79,4 +82,6 @@ class WeatherPlugin(Plugin):
                     "temperature_2m_min": response["daily"]["temperature_2m_min"][i],
                     "precipitation_probability_mean": response["daily"]["precipitation_probability_mean"][i]
                 }
-            return {"today": datetime.today().strftime("%A, %B %d, %Y"), "forecast": results}
+            result = {"today": datetime.today().strftime("%A, %B %d, %Y"), "forecast": results}
+            logging.debug(function_name, result)
+            return result
