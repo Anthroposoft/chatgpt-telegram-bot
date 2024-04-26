@@ -2,6 +2,7 @@ from __future__ import annotations
 import datetime
 import logging
 import os
+import pprint
 
 import tiktoken
 
@@ -234,6 +235,7 @@ class OpenAIHelper:
         elif show_plugins_used:
             answer += f"\n\n---\n🔌 {', '.join(plugin_names)}"
 
+        logging.info(answer, tokens_used)
         yield answer, tokens_used
 
     @retry(
@@ -314,6 +316,8 @@ class OpenAIHelper:
                 if len(functions) > 0:
                     common_args['functions'] = self.plugin_manager.get_functions_specs()
                     common_args['function_call'] = 'auto'
+
+            logging.info(pprint.pformat(common_args))
             return await self.client.chat.completions.create(**common_args)
 
         except openai.RateLimitError as e:
@@ -352,11 +356,13 @@ class OpenAIHelper:
                     if first_choice.message.function_call.arguments:
                         arguments += first_choice.message.function_call.arguments
                 else:
+                    logging.debug("--3--", response, plugins_used)
                     return response, plugins_used
             else:
+                logging.debug("--4--", response, plugins_used)
                 return response, plugins_used
 
-        logging.info(f'Calling function {function_name} with arguments {arguments}')
+        logging.debug(f'Calling function {function_name} with arguments {arguments}')
         function_response = await self.plugin_manager.call_function(function_name, self, arguments)
 
         if function_name not in plugins_used:
