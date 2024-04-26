@@ -1,7 +1,5 @@
 import logging
 import pprint
-import types
-from datetime import datetime
 from typing import Dict
 import os
 import requests
@@ -30,7 +28,7 @@ class GooglePlacesTextSearchPlugin(Plugin):
 
     def __init__(self):
         api_key = os.getenv('GOOGLE_MAPS_API_KEY')
-        self.region_code = os.getenv('GOOGLE_MAPS_API_REGION_CODE', default="en")
+        self.region_code = os.getenv('GOOGLE_MAPS_API_REGION_CODE', default="us")
         if not api_key:
             raise ValueError(
                 'GOOGLE_MAPS_API_KEY environment variable must be set to use GooglePlacesTextSearch Plugin')
@@ -47,13 +45,14 @@ class GooglePlacesTextSearchPlugin(Plugin):
                                "the Google Places Text Search API. The user may ask about restaurants, "
                                "shops, shopping malls, healthcare services, local companies,"
                                "medical care center, sight seeing, administration center, etc. at a "
-                               "specifc place or location or nearby his specific location."
+                               "specific place or location or nearby his specific location."
                                "\n"
                                "For example:\n"
                                "I am at Berlin Alexanderplatz, what are the 5 best restaurants around?\n"
                                "Restaurants near Bakerstreet London?\n"
                                "Nearest hospital to Baker street ind London?\n"
-                               "I need a shoemaker. I am at Bakerstreet London?\n",
+                               "I need a shoemaker. I am at Bakerstreet London?\n"
+                               "What are the opening times of restaurant Beekeeper in London?\n",
                 "parameters": {
                     "type": "object",
                     "properties": {
@@ -63,14 +62,15 @@ class GooglePlacesTextSearchPlugin(Plugin):
                                 The question about a location of the user. 
                                 If the user question does not contain his location, ask for the
                                 location and use this location to formulate the correct question for
-                                the Google Places Text Search API.
+                                the Google Places Text Search API. Or use the context of previous 
+                                message to determine the location of the user.
                                 """,
                         },
                         "result_count": {
                             "type": "integer",
                             "description": "The number of results that should be returned from the Google Places Text Search API."
-                                           " By default this should be set to 4. If the user states give me the 3 best restaurants,"
-                                           "the this umber should be 3. If the user states give me the best restaurant or hotel, "
+                                           " By default this should be set to 5. If the user says 'give me the 3 best restaurants',"
+                                           "then the this umber should be 3. If the user says give me the best restaurant or hotel, "
                                            "then this number should be 1."
                         },
                     },
@@ -80,19 +80,20 @@ class GooglePlacesTextSearchPlugin(Plugin):
         ]
 
     async def execute(self, function_name, helper, **kwargs) -> Dict:
-        logging.info(kwargs["question"])
+        logging.info(kwargs)
 
-        result_count = 4
+        result_count = 5
         if "result_count" in kwargs:
             result_count = kwargs["result_count"]
+
+        field_mask = ('places.displayName,places.formattedAddress,places.priceLevel,places.rating,'
+                      'places.googleMapsUri,places.websiteUri,places.regularOpeningHours')
 
         url = 'https://places.googleapis.com/v1/places:searchText'
         headers = {
             'Content-Type': 'application/json',
             'X-Goog-Api-Key': self.api_key,
-            'X-Goog-FieldMask': 'places.displayName,places.formattedAddress,places.priceLevel,'
-                                'places.rating,places.regularOpeningHours,places.googleMapsUri,'
-                                'places.websiteUri'
+            'X-Goog-FieldMask': field_mask
         }
         data = {
             'textQuery': kwargs["question"],
