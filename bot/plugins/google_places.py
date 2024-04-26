@@ -30,6 +30,7 @@ class GooglePlacesTextSearchPlugin(Plugin):
 
     def __init__(self):
         api_key = os.getenv('GOOGLE_MAPS_API_KEY')
+        self.region_code = os.getenv('GOOGLE_MAPS_API_REGION_CODE', default="en")
         if not api_key:
             raise ValueError(
                 'GOOGLE_MAPS_API_KEY environment variable must be set to use GooglePlacesTextSearch Plugin')
@@ -96,6 +97,7 @@ class GooglePlacesTextSearchPlugin(Plugin):
         data = {
             'textQuery': kwargs["question"],
             'maxResultCount': result_count,
+            'regionCode': self.region_code,
         }
         response = requests.post(url, headers=headers, json=data)
 
