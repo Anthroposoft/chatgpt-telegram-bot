@@ -150,7 +150,8 @@ type: article
             try:
                 page = wikipedia.page(title)
                 if "article" in the_type.lower():
-                    result = {"text": page.content, "url": page.url}
+                    result = {"text": page.content, "url": page.url, "images_urls": page.images,
+                              "references": page.references, "links": page.links}
                 else:
                     result = {"summary": page.summary, "url":  page.url}
                 logging.info(result)
