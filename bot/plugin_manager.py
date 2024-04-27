@@ -1,5 +1,6 @@
 import json
 
+from plugins.wiki_bot import WikipediaPlugin
 from plugins.gtts_text_to_speech import GTTSTextToSpeech
 from plugins.auto_tts import AutoTextToSpeech
 from plugins.dice import DicePlugin
@@ -26,6 +27,7 @@ class PluginManager:
     def __init__(self, config):
         enabled_plugins = config.get('plugins', [])
         plugin_mapping = {
+            'wikipedia': WikipediaPlugin,
             'google_places': GooglePlacesTextSearchPlugin,
             'wolfram': WolframAlphaPlugin,
             'weather': WeatherPlugin,
