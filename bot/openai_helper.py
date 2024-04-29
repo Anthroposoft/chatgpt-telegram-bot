@@ -328,6 +328,24 @@ class OpenAIHelper:
             raise Exception(f"⚠️ _{localized_text('error', bot_language)}._ ⚠️\n{str(e)}") from e
 
     async def __handle_function_call(self, chat_id, response, stream=False, times=0, plugins_used=()):
+        """
+        Handles the function call from the given response.
+
+        Parameters:
+        - chat_id: The ID of the chat.
+        - response: The response received from the chat.
+        - stream: A boolean indicating whether to stream the response or not. Default is False.
+        - times: The number of times the function has been called recursively. Default is 0.
+        - plugins_used: A tuple containing the names of the plugins already used. Default is an empty tuple.
+
+        Returns:
+        - The response and plugins_used tuple if the function call is not present in the response or if there are no choices in the response.
+        - The function_response and plugins_used tuple if the function call is successful and returns a direct result.
+        - The function_response and plugins_used tuple if the function call is successful but does not return a direct result.
+        - Calls the __handle_function_call method recursively with updated parameters.
+
+        Docstring Examples:
+        """
         function_name = ''
         arguments = ''
         if stream:
@@ -374,8 +392,8 @@ class OpenAIHelper:
         response = await self.client.chat.completions.create(
             model=self.config['model'],
             messages=self.conversations[chat_id],
-            functions=self.plugin_manager.get_functions_specs(),
-            function_call='auto' if times < self.config['functions_max_consecutive_calls'] else 'none',
+            tools=self.plugin_manager.get_functions_specs(),
+            tool_choice='auto' if times < self.config['functions_max_consecutive_calls'] else 'none',
             stream=stream
         )
         return await self.__handle_function_call(chat_id, response, stream, times + 1, plugins_used)
