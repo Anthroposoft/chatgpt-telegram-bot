@@ -57,14 +57,30 @@ num_titles: 10
 Questions: Find the top 3 results about Python in Wikipedia.
 num_titles: 3"""
                         },
+                        "language": {
+                            "type": "string",
+                            "description": """
+Detect the language that the user would like to search for. Extract this from the question of the user, or
+use the language of the question if the user did not mention it.
+
+Questions: Look for Biodiversity in Wikipedia. Reduce the number of titles to 10.
+language: en
+
+Questions: Finde die Einträge über Python in Wikipedia.
+language: de
+
+Questions: Search the russian wikipedia for Siberian Tiger.
+language: ru
+"""
+                        },
                     },
-                    "required": ["topic"],
+                    "required": ["topic", "language"],
                 },
             },
             {
                 "name": "get_article_from_wikipedia",
-                "description": f"""This function must be called when the user want to receive a summary about 
-                                   a Wikipedia article, or if he wants that you analyse the whole wikipedia article 
+                "description": f"""This function must be called when the user want to receive a full  
+                                   Wikipedia article, or if he wants that you analyse the whole wikipedia article 
                                    for a specific title. The user must explicitly mention Wikipedia and 
                                    summary or page terms for a specific title in wikipedia.
                                   .""",
@@ -78,7 +94,7 @@ The title of the wikipedia article the user want to summarize or to analyse by y
 Extract this title from the user question.
 Examples:
 
-Questions: Summarize Biodiversity from Wikipedia.
+Questions: Summarize Biodiversity article from Wikipedia.
 title: Biodiversity
        
 Questions: Give me the wikipedia article about Python (programming language).
@@ -90,49 +106,43 @@ title: Liverpool
 Questions: Show me the most important concept in Physics based on Wikipedia.
 title: Physics
                
-Questions: Tell me everything about Michael Jackson the singer from Wikipedia.
+Question: Tell me everything about Michael Jackson the singer from Wikipedia.
+title: Michael Jackson (singer)
+
+Question: Load the wikipedia article about Michael Jackson the singer from Wikipedia.
 title: Michael Jackson (singer)
 """,
                         },
-                        "type": {
+                        "language": {
                             "type": "string",
-                            "description": f"""
-The processing type of the wikipedia article the user want: either the 'summary' from wikipedia directly,
-or the whole 'article' so that you can analyse it by user request. 
-Extract this type from the user question.
-Examples:
-
-Questions: Summarize Biodiversity from Wikipedia.
-type: summary
-
-Questions: Give me the wikipedia article about Python (programming language).
-type: article
-
-Questions: Give me the wikipedia article about Python (programming language) and summarize it yourself.
-type: article
-
-Questions: What is the wikipedia entry about Liverpool?. Please summarize.
-type: summary
-
-Questions: Show me the most important concept in Physics based on Wikipedia.
-type: article
+                            "description": """
+Detect the language that the user would like to search for. Extract this from the question of the user, or
+use the language of the question if the user did not mention it.
 
 Questions: Tell me everything about Michael Jackson the singer from Wikipedia.
-type: article
-""",
+language: en
+
+Question: Lade den Artikel über Python aus Wikipedia.
+language: de
+
+Questions: Show me the russian wikipedia about the Siberian Tiger.
+language: ru
+"""
                         },
                     },
-                    "required": ["title", "type"],
+                    "required": ["title", "language"],
                 },
             },
         ]
 
     async def execute(self, function_name, helper, **kwargs) -> Dict:
         logging.info(function_name, kwargs)
-        wikipedia.set_lang(self.language_code)
 
         if function_name == "search_wikipedia":
             topic = kwargs['topic']
+            language = kwargs['language']
+            wikipedia.set_lang(language)
+            print("Wiki search", topic, language)
             num_titles = 5
             if "num_titles" in kwargs:
                 num_titles = kwargs['num_titles']
@@ -145,19 +155,17 @@ type: article
 
         elif function_name == "get_article_from_wikipedia":
             title = kwargs['title']
-            the_type = kwargs['type']
+            language = kwargs['language']
+            wikipedia.set_lang(language)
+            print("Wiki article", title, language)
 
             try:
                 page = wikipedia.page(title)
-                if "article" in the_type.lower():
-                    result = {"text": page.content, "url": page.url, "images_urls": page.images,
-                              "references": page.references}
-                else:
-                    result = {"summary": page.summary, "url":  page.url}
+                result = {"text": page.content, "url": page.url, "images_urls": page.images,
+                          "references": page.references}
                 logging.info(result)
                 return result
 
             except wikipedia.exceptions.DisambiguationError as e:
-                print(e.options)
                 return (f"The title {title} is ambgious. Wikipedia has several entries for this title: "
                         f"{str(e.options)}. Please chose one of these titles.")

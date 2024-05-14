@@ -1,4 +1,5 @@
 import json
+from pprint import pprint
 
 from plugins.wiki_bot import WikipediaPlugin
 from plugins.gtts_text_to_speech import GTTSTextToSpeech
@@ -17,6 +18,7 @@ from plugins.worldtimeapi import WorldTimeApiPlugin
 from plugins.whois_ import WhoisPlugin
 from plugins.webshot import WebshotPlugin
 from plugins.google_places import GooglePlacesTextSearchPlugin
+from plugins.current_date import CurrentDatePlugin
 
 
 class PluginManager:
@@ -27,6 +29,7 @@ class PluginManager:
     def __init__(self, config):
         enabled_plugins = config.get('plugins', [])
         plugin_mapping = {
+            'current_date': CurrentDatePlugin,
             'wikipedia': WikipediaPlugin,
             'google_places': GooglePlacesTextSearchPlugin,
             'wolfram': WolframAlphaPlugin,
@@ -47,11 +50,20 @@ class PluginManager:
         }
         self.plugins = [plugin_mapping[plugin]() for plugin in enabled_plugins if plugin in plugin_mapping]
 
-    def get_functions_specs(self):
+    def get_functions_specs_tools(self):
         """
         Return the list of function specs that can be called by the model
         """
-        return [spec for specs in map(lambda plugin: plugin.get_spec(), self.plugins) for spec in specs]
+        f_list = [spec for specs in map(lambda plugin: plugin.get_spec(), self.plugins) for spec in specs]
+        f_dict = [{"type": "function", "function": f} for f in f_list]
+        return f_dict
+
+    def get_functions_specs_functions(self):
+        """
+        Return the list of function specs that can be called by the model
+        """
+        f_list = [spec for specs in map(lambda plugin: plugin.get_spec(), self.plugins) for spec in specs]
+        return f_list
 
     async def call_function(self, function_name, helper, arguments):
         """

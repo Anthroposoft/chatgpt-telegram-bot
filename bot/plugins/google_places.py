@@ -87,7 +87,8 @@ class GooglePlacesTextSearchPlugin(Plugin):
             result_count = kwargs["result_count"]
 
         field_mask = ('places.displayName,places.formattedAddress,places.priceLevel,places.rating,'
-                      'places.googleMapsUri,places.websiteUri,places.regularOpeningHours')
+                      'places.googleMapsUri,places.websiteUri,places.regularOpeningHours,'
+                      'places.internationalPhoneNumber')
 
         url = 'https://places.googleapis.com/v1/places:searchText'
         headers = {
