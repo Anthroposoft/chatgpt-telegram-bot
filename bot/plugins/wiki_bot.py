@@ -161,8 +161,7 @@ language: ru
 
             try:
                 page = wikipedia.page(title)
-                result = {"text": page.content, "url": page.url, "images_urls": page.images,
-                          "references": page.references}
+                result = {"text": page.content, "url": page.url, "images_urls": page.images}
                 logging.info(result)
                 return result
 
